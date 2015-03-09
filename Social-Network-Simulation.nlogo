@@ -144,15 +144,17 @@ to make-peers [num]                           ;; creating the nodes representing
 ;     ]]]
     set color blue + 2
     set peer-strategy ranking-metric                    ;; choose default metric at the start
-    set number-docs 0
+    set number-docs 0                                   ;; they have yet to like documents
     set number-friends 0
     setxy 0.99 * xcor 0.99 * ycor 
     move-turtles "not any? other turtles-here and pxcor < 0"
     ;add-color taste
-    set score 0
+    set score 0                                         ;; all peers start initially with a score of 0, they still haven't liked any documents yet
     set failureCount 0
     set changeStrategy 0
     set failureCount 0
+    set timeDisconnected 0  
+    set connected? true                            ;; all the peers start connected, so this makes sense
     disperse
     ]
 end
@@ -240,6 +242,7 @@ to make-populations                                          ;;procedure to crea
   
 end
 
+
 ;to-report dl-documents ;; report list of documents returned to a peer for the download
 ;  ask peers [ set color blue + 2 set size 1.2 ]
 ;  set size 2
@@ -274,7 +277,7 @@ to-report list-of-documents [metric] ;; report list of documents returned to a p
   ]
   if metric = "peer similarity" [
       let p self
-      let k [self] of other peers; with [ out-document-link-neighbors != [] ] 
+      let k [self] of other peers with [connected?]     ;;take only the connected peers (doesn't make a difference if dynamic_network isn't activated)
       let winner nobody
       if (k != nobody and k != []) [            
       foreach k [ 
@@ -330,7 +333,7 @@ to-report list-of-documents [metric] ;; report list of documents returned to a p
   ]
   
    if metric = "peer popularity" [
-      let pp sort-on [ (- count my-in-follow-links)] peers
+      let pp sort-on [ (- count my-in-follow-links)] peers with [connected?]  ;; sort the list of peers by counting the number of follower from the most popular to the least
       let pop-peer first pp
       let pop-peer-docs [self] of [out-document-link-neighbors] of pop-peer
       ;; rank the popular peers and filter those with no documents
@@ -618,16 +621,18 @@ end
 to dynamic-network-update  ;; procedure to updating the connecting and disconneting peers
  
  ask peers with [ ttl > 0 ] [ set ttl ttl - 1]
+ ask peers with [not connected? and timeDisconnected > 0] [set timeDisconnected timeDisconnected - 1]
  disconnect
  join-network
  
 end
 
-to disconnect     ;; peers procedure: disconnecting a peer from when ttl reach 0
+to disconnect           ;; peers procedure: disconnecting a peer when ttl reaches 0
  ; let node0 one-of peers with 
- let disconneting-peers peers with [ ttl = 0 ]
+ let disconneting-peers peers with [ ttl = 0 and connected? ]
  ask disconneting-peers [ ask my-links [ hide-link ]
    set timeDisconnected (minStayDisconnected + random maxStayDisconnected)
+   set connected? false
    
    ]
  ;ask disconneting-peers [ hide links ]
@@ -637,13 +642,24 @@ end
 to join-network    ;;peer procedure: join the network depending on join-probability value
   let random-join-probability random-float 100
  ; set random-join-probability ifelse-value (? < 0) [ 0] [?]
+  let peer-joiners peers with [ timeDisconnected = 0 and not connected? ]  ;;select the peers that have reached the limit for disconnecting so they can join the network again
   
-  let disconnected-peers peers with [ ttl = 0 ]
-  if join-probability >= random-join-probability [ 
-    let random-joiners random ( count disconnected-peers + 1 )
-    ask n-of random-joiners disconnected-peers [ ask links [ show-link ]
-      set ttl 80 + random maximum-life ]
-    ]
+  if peer-joiners != [] and peer-joiners != nobody [
+  ask peer-joiners [
+      ask my-links [ show-link ]
+      set ttl minStayConnected + random maxStayConnected
+      set connected? true
+      ]
+  ]
+  
+  
+  
+;  let disconnected-peers peers with [ ttl = 0 ]
+;  if join-probability >= random-join-probability [ 
+;    let random-joiners random ( count disconnected-peers + 1 )
+;    ask n-of random-joiners disconnected-peers [ ask links [ show-link ]
+;      set ttl 80 + random maximum-life ]
+;    ]
 end
 
 
@@ -656,7 +672,6 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;TO-FIX : the nhood var, so it receives the list of the neighbors and not just one at a time
-
 
 
 
@@ -717,7 +732,7 @@ join-probability
 join-probability
 0
 100
-31.41
+15
 0.01
 1
 %
@@ -1121,7 +1136,7 @@ SWITCH
 404
 Verbose?
 Verbose?
-0
+1
 1
 -1000
 
