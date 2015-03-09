@@ -1,0 +1,19 @@
+to set-variables                                                       ;;procedure for setting the global variables for the start of the simulation 
+  set num-peers 
+  set num-docs 
+  set maxTicks 2000                                                    ;;maximum ticks to run  the simulation
+  set number-labels 10                                                 ;;here you can set the number of labels used (maximum of lenght of list - 1 = 30) because the 0 is for bad documents 
+  set-default-shape links "slim-link"
+  set-default-shape peers "circle"
+  set-default-shape documents "square"
+  set-default-shape document-links "slim-link"
+  set minStayDisconnected  20
+  set maxStayDisconnected  40
+  set minStayConnected   60
+  set maxStayConnected   120
+  ;set list-labels [ "yellow" "red" "green" "bad"]
+  set list-labels [ 1 2 3 4 5 ]    ;; labels from 1 to 5 are for good documents and label 0 is exclusivly used for labeling "bad documents"
+  set failureThreshold 5                                               
+  set minFriends 0                                            
+  set strategies ["peer similarity" "peer popularity" "document similarity" "document popularity"]
+end
