@@ -11,8 +11,11 @@ to set-variables                                                       ;;procedu
   set minStayDisconnected  20
   set maxStayDisconnected  40
   set minStayConnected   40
-  set maxStayConnected   100
-  ;set list-labels [ "yellow" "red" "green" "bad"]
+  set maxStayConnected   100  
+  set crowdColor lime + 1.5
+  set fFollowerColor violet + 1.5
+  set attackerColor red + 1.5
+  ;set list-labels [ "yellow" "red" "green" "bad"]  this was the old list of labels
   set list-labels [ 1 2 3 4 5 ]    ;; labels from 1 to 5 are for good documents and label 0 is exclusivly used for labeling "bad documents"
   set failureThreshold 5                                               
   set minFriends 0                                            
