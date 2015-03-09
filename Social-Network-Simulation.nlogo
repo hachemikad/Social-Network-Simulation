@@ -24,6 +24,7 @@ directed-link-breed [document-links document-link]
 globals [
   num-peers
   num-docs
+  max-docs-stored                    ;;maximum of liked documents for each peer at the start of the simulation
   list-labels
   my-docs
   number-labels                      ;;number of labels
@@ -91,7 +92,7 @@ to setup
   make-peers num-peers  ;; creating the peers
   make-documents num-docs  ;; creating documents
   make-friends   ;; making friends links between peers
-  make-populations
+  if not default? [  make-populations ] ;; create the populations if the default switch is OFF (default)
   add-documents peers documents  
   ;ask peers [ calculate-score [self] of out-document-link-neighbors ]   ;;calculate initial score
   ask patches[ set-separation ]  ;;create the separation between the two groupes, peers and documents
@@ -134,7 +135,8 @@ to make-peers [num]                           ;; creating the nodes representing
     fd random 10
     set size 1.2    
     set taste n-of (1 + random 3) list-labels          ;; set number of taste (here it's minimum of 1 and maximum of 3)
-    set label who
+    set label word "  " who
+    set label-color black + 1
 ;    ifelse taste = "red" [ set color red  ]
 ;    [ifelse taste = "yellow" [ set color yellow ] 
 ;    [ifelse taste = "green" [ set color green] 
@@ -143,7 +145,7 @@ to make-peers [num]                           ;; creating the nodes representing
 ;      
 ;     ]]]
     set color blue + 2
-    set peer-strategy ranking-metric                    ;; choose default metric at the start
+    if default? [ set peer-strategy ranking-metric ]    ;; choose default metric at the start for all the peers
     set number-docs 0                                   ;; they have yet to like documents
     set number-friends 0
     setxy 0.99 * xcor 0.99 * ycor 
@@ -200,9 +202,10 @@ to produce [p]                    ;; procedure to produce new documents
   
 end
 
-to add-documents [ peer doc ]     ;;affects each document to a peer's repository, this is for the initial setup phase 
+to add-documents [ peer doc ]                                        ;;affects documents to a peer's repository (initial liked documents), this is for the setup phase at the start of the simulation
     
-  ask peer [ let n random count doc  
+  ask peer [ 
+    let n random count doc  
     while [doc != nobody and n > 0 and number-docs < max-docs-stored] [ 
       create-document-link-to one-of doc [set stored? true set color gray + 2 ask other-end [ set isstored? true ]] set number-docs number-docs + 1 set n n - 1
       ] 
@@ -236,10 +239,10 @@ to make-populations                                          ;;procedure to crea
   let tempFF sublist k numCrowdFollowers (numCrowdFollowers + numFriendFollowers)
   let tempAT sublist k (length k - numAttackers) length k 
   ;; now affecting the peers to their respective populations  ;;
-  foreach tempCF [ ask ? [ set population "crowd follower" ]  ]
-  foreach tempFF [ ask ? [ set population "friend follower" ] ]
-  foreach tempAT [ ask ? [ set population "attacker" ] ]
-  
+  foreach tempCF [ ask ? [ set population "crowd follower" set peer-strategy "document popularity" set color lime + 1.5]  ]    ;; choose ranking metrics for the population to use
+  foreach tempFF [ ask ? [ set population "friend follower" set peer-strategy "peer similarity" set color violet + 1.5] ]
+  foreach tempAT [ ask ? [ set population "attacker" set peer-strategy one-of strategies  set color red + 1.5] ]               ;; choose a random ranking metric for the malicious peers,
+                                                                                                          ;; this can be improved, e.g. creating a different ranking metrics for malicious peers (attackers)  
 end
 
 
@@ -369,8 +372,8 @@ to-report list-of-documents [metric] ;; report list of documents returned to a p
 ;      set dc sort-by [ member? [tag] of ? listlabel] dc
 ;      report dc
 ;  ]
-  if metric = "document popularity" [
-      set dc sort-on [ ( - count my-in-document-links )] dc 
+  if metric = "document popularity" [                           
+      set dc sort-on [ ( - count my-in-document-links )] dc                 ;; rank documents by their popularity (number of likes)
       report dc
   ]
   
@@ -386,10 +389,10 @@ to-report similarity [ p1 p2]  ;;peer procedure to calculate the similarity betw
     let card1 length sim1
     let sim2 [self] of [out-document-link-neighbors] of p2                      ;; list of documents that p2 likes
     let liked [self] of [out-document-link-neighbors] of p1                     ;; list of documents that p1 likes
-    set sim2 sentence sim2 liked                                                 ;; merging the two lists so we have the list of liked document by the two peers
+    set sim2 sentence sim2 liked                                                ;; merging the two lists so we have the list of liked document by the two peers
     set sim2 remove-duplicates sim2                                              
     let card2 length sim2
-   report ifelse-value (card2 != 0) [ card1 / card2] [ 0 ]                       ;;calculate peer-similarity and report it   
+   report ifelse-value (card2 != 0) [ card1 / card2] [ 0 ]                      ;;calculate peer-similarity and report it   
   
 end
 
@@ -564,10 +567,11 @@ to-report count-documents
 end
 
 to highlight-peers
-  ask peers [ ifelse taste = "RED" [set color red + 1.5 ][set color yellow + 3] set size 1.2 ]
+  ;ask peers [ ifelse taste = "RED" [set color red + 1.5 ][set color yellow + 3] set size 1.2 ]
+  ask peers [ ifelse population = "attacker" [set color red + 1.5 ][set color blue + 2] set size 1.2 ]      ;;reset the original sizes and colors
   set size 2.5
   set color color + 1.2
-  let p out-follow-link-neighbors ;with [ number-docs > 0]   ;; take only the friends that have documents in their repository
+  let p out-follow-link-neighbors                    ;; highlight the friends of the active peer
   ask p [ set size size + 0.4 set color color - 1.5] ;; highlight the friends of the active peer
 end
 
@@ -633,6 +637,7 @@ to disconnect           ;; peers procedure: disconnecting a peer when ttl reache
  ask disconneting-peers [ ask my-links [ hide-link ]
    set timeDisconnected (minStayDisconnected + random maxStayDisconnected)
    set connected? false
+;   hide-turtle             ;;hide the turtle from view completly (uncomment both this line and the show-turtle line if you want this option)
    
    ]
  ;ask disconneting-peers [ hide links ]
@@ -649,6 +654,7 @@ to join-network    ;;peer procedure: join the network depending on join-probabil
       ask my-links [ show-link ]
       set ttl minStayConnected + random maxStayConnected
       set connected? true
+;      show-turtle          ;;show turtle again (uncomment both this line and the hide-turtle line in procedure disconnect if you want this option)
       ]
   ]
   
@@ -849,10 +855,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1139
-321
-1260
-366
+1128
+293
+1249
+338
 Peers w/o followers
 count peers with [ count my-in-follow-links = 0 ]
 17
@@ -881,16 +887,6 @@ the-random-seed
 0
 Number
 
-TEXTBOX
-204
-17
-354
-47
-Chose the random \nseed:
-12
-0.0
-1
-
 MONITOR
 229
 406
@@ -903,10 +899,10 @@ precision (( sum [number-friends] of peers with [ (count  my-out-follow-links wi
 11
 
 PLOT
-933
-263
-1133
-413
+920
+252
+1120
+402
 Documents liked degree
 time
 degree likes
@@ -921,45 +917,30 @@ PENS
 "nodes-degree" 1.0 1 -16777216 true "" ";plot (count documents-links / count documents)\n\nplot mean [count in-document-link-neighbors] of documents / count peers"
 
 CHOOSER
-931
-28
-1069
-73
+916
+10
+1054
+55
 behavior
 behavior
 "good" "bad" "random"
 0
 
 CHOOSER
-933
-80
-1125
-125
+915
+60
+1107
+105
 ranking-metric
 ranking-metric
 "peer taste" "peer similarity" "peer popularity" "document similarity" "document popularity"
-1
-
-SLIDER
-936
-221
-1121
-254
-max-docs-stored
-max-docs-stored
-0
-10
-3
-1
-1
-NIL
-HORIZONTAL
+2
 
 MONITOR
-1136
-381
-1255
-426
+1129
+347
+1248
+392
 Peers w/o friends
 count peers with [ count my-out-follow-links = 0]
 17
@@ -1029,20 +1010,20 @@ PENS
 "Score" 1.0 0 -16777216 true "set-plot-x-range 0 100\nset-plot-y-range 0 1" "if ticks mod 5 = 0 [plot mean [score] of peers with [count out-follow-link-neighbors > 0]]"
 
 CHOOSER
-1090
-29
-1254
-74
+1074
+10
+1238
+55
 score-metric
 score-metric
 "Babak Score" "Hachemi Score"
 1
 
 SWITCH
-1133
-81
-1254
-114
+1124
+63
+1238
+96
 filter-list?
 filter-list?
 1
@@ -1050,10 +1031,10 @@ filter-list?
 -1000
 
 SWITCH
-1107
-134
-1256
-167
+1118
+112
+1245
+145
 popular-p-filter?
 popular-p-filter?
 0
@@ -1061,20 +1042,20 @@ popular-p-filter?
 -1000
 
 CHOOSER
-934
-133
-1038
-178
+918
+112
+1022
+157
 like-behavior
 like-behavior
 "standard" "relevant" "like miss"
 0
 
 SWITCH
-1137
-185
-1244
-218
+1132
+165
+1239
+198
 produce?
 produce?
 1
@@ -1082,25 +1063,25 @@ produce?
 -1000
 
 SLIDER
-935
-184
-1119
-217
+919
+162
+1103
+195
 produce-chance
 produce-chance
 0
 100
-30.18
+30.23
 0.01
 1
 %
 HORIZONTAL
 
 SWITCH
-1139
-223
-1245
-256
+1133
+211
+1239
+244
 follow?
 follow?
 1
@@ -1108,10 +1089,10 @@ follow?
 -1000
 
 SWITCH
-1147
-275
-1237
-308
+922
+211
+1012
+244
 stop?
 stop?
 1
@@ -1119,10 +1100,10 @@ stop?
 -1000
 
 SWITCH
-1136
-434
-1256
-467
+1126
+255
+1246
+288
 doc-score?
 doc-score?
 0
@@ -1184,6 +1165,17 @@ attackers
 1
 %
 HORIZONTAL
+
+SWITCH
+208
+10
+298
+43
+default?
+default?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?

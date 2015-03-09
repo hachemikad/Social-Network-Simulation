@@ -1,6 +1,7 @@
 to set-variables                                                       ;;procedure for setting the global variables for the start of the simulation 
   set num-peers 40
-  set num-docs 120 
+  set num-docs 120
+  set max-docs-stored 2                                                ;;maximum of liked docs at start
   set maxTicks 3000                                                    ;;maximum ticks to run  the simulation
   set number-labels 10                                                 ;;here you can set the number of labels used (maximum of lenght of list - 1 = 30) because the 0 is for bad documents 
   set-default-shape links "slim-link"
