@@ -39,6 +39,9 @@ globals [
   numFriendFollowers                 ;;number of friend followers
   numCrowdFollowers                  ;;number of crowd followers
   numAttackers                       ;;number of attackers
+  crowdColor
+  fFollowerColor
+  attackerColor
 
   
 ]
@@ -239,9 +242,9 @@ to make-populations                                          ;;procedure to crea
   let tempFF sublist k numCrowdFollowers (numCrowdFollowers + numFriendFollowers)
   let tempAT sublist k (length k - numAttackers) length k 
   ;; now affecting the peers to their respective populations  ;;
-  foreach tempCF [ ask ? [ set population "crowd follower" set peer-strategy "document popularity" set color lime + 1.5]  ]    ;; choose ranking metrics for the population to use
-  foreach tempFF [ ask ? [ set population "friend follower" set peer-strategy "peer similarity" set color violet + 1.5] ]
-  foreach tempAT [ ask ? [ set population "attacker" set peer-strategy one-of strategies  set color red + 1.5] ]               ;; choose a random ranking metric for the malicious peers,
+  foreach tempCF [ ask ? [ set population "crowd follower" set peer-strategy "document popularity" set color crowdColor]  ]    ;; choose ranking metrics for the population to use
+  foreach tempFF [ ask ? [ set population "friend follower" set peer-strategy "peer similarity" set color fFollowerColor] ]
+  foreach tempAT [ ask ? [ set population "attacker" set peer-strategy one-of strategies  set color attackerColor] ]               ;; choose a random ranking metric for the malicious peers,
                                                                                                           ;; this can be improved, e.g. creating a different ranking metrics for malicious peers (attackers)  
 end
 
@@ -568,7 +571,8 @@ end
 
 to highlight-peers
   ;ask peers [ ifelse taste = "RED" [set color red + 1.5 ][set color yellow + 3] set size 1.2 ]
-  ask peers [ ifelse population = "attacker" [set color red + 1.5 ][set color blue + 2] set size 1.2 ]      ;;reset the original sizes and colors
+  ask peers [ ifelse population = "attacker" [ set color attackerColor ]
+    [ ifelse population = "crowd follower" [ set color crowdColor    ] [ set color fFollowerColor] ] set size 1.2 ]      ;;reset the original sizes and colors
   set size 2.5
   set color color + 1.2
   let p out-follow-link-neighbors                    ;; highlight the friends of the active peer
@@ -579,17 +583,16 @@ end
 ;;   LAY-OUT & SYLE   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-to add-color [c] ;; color the document according to the tag
+to add-color [c]        ;; color the document according to the tag
   ifelse c = "RED" 
     [  set color red + 1]
     [  set color yellow ]   
 end
 
-to change-layout  ;; turtles procedure to make the network look prettier 
+to change-layout        ;; turtles procedure to make the network look prettier 
    repeat 50
   [
-;    layout-spring peers follow-links 0.3 (world-width / (sqrt num-peers)) 1
-    layout-spring peers follow-links 0.3 20 / (sqrt count peers) 0.5
+    layout-spring peers follow-links 0.3 (world-width / (sqrt num-peers)) 0.5
     display
   ]
 end
@@ -599,7 +602,7 @@ to set-separation      ;; create the visual separation between the peers and the
   ifelse (pxcor = 0) [ set pcolor white - 2 ] [ set pcolor white - .3 ]
 end
 
-to move-turtles [x]  ;;turtle procedure for the dispersion
+to move-turtles [x]    ;;turtle procedure for the dispersion
   
    ifelse count documents <= 250 [
    while [ any? turtles in-radius 2 with [self != myself] ]   ;;for spreading the documents
@@ -611,7 +614,7 @@ to move-turtles [x]  ;;turtle procedure for the dispersion
   
 end
 
-to disperse            ;; put some distance between the peers so they don't overlap with each other
+to disperse           ;; put some distance between the peers so they don't overlap with each other
   if (any? other turtles in-radius 3) [
   move-to one-of patch-set [neighbors] of neighbors
   ]
@@ -640,7 +643,6 @@ to disconnect           ;; peers procedure: disconnecting a peer when ttl reache
 ;   hide-turtle             ;;hide the turtle from view completly (uncomment both this line and the show-turtle line if you want this option)
    
    ]
- ;ask disconneting-peers [ hide links ]
   
 end
 
@@ -657,15 +659,6 @@ to join-network    ;;peer procedure: join the network depending on join-probabil
 ;      show-turtle          ;;show turtle again (uncomment both this line and the hide-turtle line in procedure disconnect if you want this option)
       ]
   ]
-  
-  
-  
-;  let disconnected-peers peers with [ ttl = 0 ]
-;  if join-probability >= random-join-probability [ 
-;    let random-joiners random ( count disconnected-peers + 1 )
-;    ask n-of random-joiners disconnected-peers [ ask links [ show-link ]
-;      set ttl 80 + random maximum-life ]
-;    ]
 end
 
 
@@ -675,9 +668,6 @@ end
 ;;;;;;;;;;;
 
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;TO-FIX : the nhood var, so it receives the list of the neighbors and not just one at a time
 
 
 
@@ -766,7 +756,7 @@ SWITCH
 240
 dynamic-network?
 dynamic-network?
-0
+1
 1
 -1000
 
@@ -1145,7 +1135,7 @@ friend-followers
 friend-followers
 0
 100 - crowd-followers
-27
+33
 1
 1
 %
@@ -1160,7 +1150,7 @@ attackers
 attackers
 0
 100 - crowd-followers - friend-followers
-15
+10
 1
 1
 %
