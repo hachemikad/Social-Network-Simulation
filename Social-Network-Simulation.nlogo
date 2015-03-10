@@ -1,14 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Created by: El-Hachemi Kadri                                                      ;;
-;; Under supervision of Professor Babak Esfandiari                                   ;;
-;; things added in this version :                                                    ;;
-;;                                                                                   ;;
-;; -produce                                                                          ;;
-;; -like behaviors                                                                   ;;
-;; -options for filtered or unfiltered ranked list                                   ;;
-;; -added improvements to peer similarity ranking                                    ;;
-;; to do:                                                                            ;;
-;; -follow                                                                           ;;
+;; Under the supervision of Professor Babak Esfandiari                               ;;
 ;;                                                                                   ;;
 ;;                                                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -538,12 +530,13 @@ to calculate-score [ranked-list]   ;;procedure for calculating the score for the
      
       ]
     [
-      set score score - 1 / length ranked-list       ;; if we don't have hits in the top-K we decrease the score, 
+      set score score - (1 / length ranked-list)       ;; if we don't have hits in the top-K we decrease the score, 
                                                      ;; note here that this utility function is arbitrary and can be replaced by a more significant and meaningful one
       show "EXECUTED!!!!"
+      show ranked-list
       
       ]
-    if score < 0 [ set score 0 ]
+    if score < 0 [ set score 0 ]                     ;; normalize score at 0 so it doesn't go bellow it (this might be change in future)
   ]
   if verbose? [ show word "The score is: " score ]
   
@@ -647,8 +640,6 @@ to disconnect           ;; peers procedure: disconnecting a peer when ttl reache
 end
 
 to join-network    ;;peer procedure: join the network depending on join-probability value
-  let random-join-probability random-float 100
- ; set random-join-probability ifelse-value (? < 0) [ 0] [?]
   let peer-joiners peers with [ timeDisconnected = 0 and not connected? ]  ;;select the peers that have reached the limit for disconnecting so they can join the network again
   
   if peer-joiners != [] and peer-joiners != nobody [
@@ -720,21 +711,6 @@ NIL
 1
 
 SLIDER
-7
-203
-178
-236
-join-probability
-join-probability
-0
-100
-15
-0.01
-1
-%
-HORIZONTAL
-
-SLIDER
 8
 162
 175
@@ -750,10 +726,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-184
-207
-342
-240
+9
+201
+167
+234
 dynamic-network?
 dynamic-network?
 1
@@ -924,7 +900,7 @@ CHOOSER
 ranking-metric
 ranking-metric
 "peer taste" "peer similarity" "peer popularity" "document similarity" "document popularity"
-2
+1
 
 MONITOR
 1129
@@ -946,7 +922,7 @@ top-k
 top-k
 0
 10
-1
+2
 1
 1
 NIL
@@ -1170,15 +1146,47 @@ default?
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This is a simulation of a social sharing network. In the network we have different peers and documents. The peers can follow each others, and they can like documents too following certain metrics. The trick here is that every peer is potentially different from another one, that means two peers can have a different taste in documents, so they will tend to like different types of documents (documents are not similar too because they can have different labels). In our simulation we have introduced labels. The labels are a generic way of saying that a peer like something, or a document is about this thing. The peer taste is constructed from these labels (he can have one or many labels), as it is the case for documents too, we decided to call the labels for documents tags, but that dosn't stand for the literary tags as in keywords, what we mean by labels here is something more truthful than a tag or a keyword, as in the real world, these can't always describe a document. So in order to decide if some document is relevant to a peer, we use these labels to mesure relevance and calculate the pay-off for the peers. 
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+In the beginning we start with a network of N peers and M documents (N and M chosen by the user) generated at a uniform random distribution. Some peers will have friends (they follow them) at random, and like some documents at random too, this depends on some global variables too, like the maximum number of liked documents, and maximum number of friends (these variables are only relevant at the beginning, because as we run the simulation there will be no limitation to the number of liked documents or friends). Because of this there might be some isolated peers (no followers or friends), and isolated documents. But that's not a problem because we want to see what happens to these isolated nodes as the simulation is running.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+Before running the simulation the user must click on the set-up button to set the network for the first time.
+First you have to pay attention to the python file that comes with the simulation, it will generate the global variable for the size of the network (although we can use sliders for that, but we discarded of them to make the GUI less cluttered).
+
+The user can choose among the different metrics for ranking documents, and behaviors for the peers. The ranking metrics are the stategies used to rank the documents (peer similarity, document popularity, etc), and the peer behavior, is the behavior of the peer toward the list of ranked documents, will he like the top K documents (good behavior), or rather choose from the bottom of the list min K (bad behavior), or it can be chosen at random (ramdom behavior).
+
+Like behavior: 
+- standard: this is the behavior of the peer if he will like the top K regardless of the similarity in labels or not.
+- relevant: the peer will only like the documents that he finds relevant to him.
+- like miss: the peer will only like the miss in the top K (this behavior is relevant if we have a different type of peers and they have a different utility function for calculating their score, e.g. malicious peers)
+
+You will notice in the GUI sliders for choosing populations, these are used to make use of predefined profiles for the peers: what this means, is for example is we have 40 peers and the user chose 50% of "Crowd Followers", we will end up with 20 peers that are crowd followers, i.e. use the same metric (document popularity) and have the same behavior.
+
+The profiles make use of the ranking metrics:
+- The crowd followers use document popularity.
+- The friend followers use peer similarity.
+- The attackers for now use a random strategy (each one of them picks a strategy at random) as their goal is not liking documents but distribuing their files in the network.
+
+We have the switch "dynamic_network" which if set at ON, will enable peers to join and disconnect from the network, it's important to note that a disconnected peer cut off all connexion, and then when he's online again he restores them.
+
+The button step runs the simulation for one tick.
+
+The button go runs the simulation until the user stops it or it stops by itself if the user definer a limit of ticks (using the python script) and the switch "stop?" is set to ON.
+
+"Verbose?" is useful if the user want to see the output on the console (although it can make the simulation slower depending on the size of the network).
+
+"filter-list?" if is set ON, the ranked list will be filtered, and the peer will only get document he doesn't already like in the final ranked list, otherwise without the filtering he will get the list as is.
+
+We have implemented two utility functions (score-metrics) to calculate the score for the peers. Both functions increment the score for a peer when he gets a hit in the top K, the difference between the two, is that one (Hachemi-score) decrements the score when there is a miss in the top K, and the other one (Babak-score) dosen't.
+
+"popular-p-filter?" is used to filter out popular peers without documents, or in the case that active peer is the most popular one, so he dosen't figure in the list of peers.
+
+"follow?" activates the follow system, the peers will follow new peers according to a function.
+
 
 ## THINGS TO NOTICE
 
@@ -1190,11 +1198,13 @@ default?
 
 ## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+This model is surely not complete, and there are different ways to extend it: adding new metrics for ranking, adding new behaviors, than means new population of peers (e.g. some ideas, anti-social peers: peers that don't follow anyone, advertiser peers: peers that want other peers to like their documents and have a different utility function for calculating their score).
+
+There are also some improvements to be made in regards of the current code, we would like to optimize the code so it runs faster, for example instead of going through all the peers, we can choose a new efficient method for selecting just a few, or maybe filtering peers that are too far on the graph (distant neighbors) or are not reachable.
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+We have made extensive use of lists and and features of agents and agentsets, especially for ranking and filtering.
 
 ## RELATED MODELS
 

@@ -1,7 +1,7 @@
 to set-variables                                                       ;;procedure for setting the global variables for the start of the simulation 
   set num-peers 40
-  set num-docs 120
-  set max-docs-stored 2                                                ;;maximum of liked docs at start
+  set num-docs 120 
+  set max-docs-stored 3
   set maxTicks 3000                                                    ;;maximum ticks to run  the simulation
   set number-labels 10                                                 ;;here you can set the number of labels used (maximum of lenght of list - 1 = 30) because the 0 is for bad documents 
   set-default-shape links "slim-link"
@@ -12,6 +12,9 @@ to set-variables                                                       ;;procedu
   set maxStayDisconnected  40
   set minStayConnected   40
   set maxStayConnected   100
+  set crowdColor lime + 1.5
+  set fFollowerColor violet + 1.5
+  set attackerColor red + 1.5
   ;set list-labels [ "yellow" "red" "green" "bad"]
   set list-labels [ 1 2 3 4 5 ]    ;; labels from 1 to 5 are for good documents and label 0 is exclusivly used for labeling "bad documents"
   set failureThreshold 5                                               
