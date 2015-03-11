@@ -34,7 +34,7 @@ globals [
   crowdColor
   fFollowerColor
   attackerColor
-
+  randomColor
   
 ]
 
@@ -53,6 +53,7 @@ peers-own
   failureCount                      ;; count how many times a stratedy failed to give us new results
   lastResult                        ;; keep track of last results
   score
+  oldScores                         ;; list of previous scores 
   changeStrategy                    ;;count how many times a peer has changed his strategy
   population                        ;;shows what population the peer is in
 ]
@@ -147,6 +148,7 @@ to make-peers [num]                           ;; creating the nodes representing
     move-turtles "not any? other turtles-here and pxcor < 0"
     ;add-color taste
     set score 0                                         ;; all peers start initially with a score of 0, they still haven't liked any documents yet
+    set oldScores []                                     ;; makes sense because we don't yet have scores for the peers
     set failureCount 0
     set changeStrategy 0
     set failureCount 0
@@ -391,7 +393,7 @@ to-report similarity [ p1 p2]  ;;peer procedure to calculate the similarity betw
   
 end
 
-to do-actions                                ;; main procedure for downloading then ranking, and liking documents
+to do-actions                                ;; peer procedure: it's the main procedure used by the active peer for downloading then ranking, and liking documents
   highlight-peers
   let doc-list list-of-documents peer-strategy
   if verbose? [  show word "The  ranked  list is:" doc-list ]
@@ -428,12 +430,24 @@ to do-actions                                ;; main procedure for downloading t
     foreach doc-list [ create-document-link-to ? [ set color black - 2 ]]
         ]
     ]
+    
     ifelse (score-metric = "Hachemi Score")[ 
     calculate-score doc-list   
     ][
     calculate-score-babak doc-list   
     ]
-  ]
+    set oldScores fput score oldScores                            ;; update the list of old scores
+    if length oldScores > failureThreshold and adapt?[            ;; if we have enough elements in the list and the adaptation is enabled 
+       set oldScores sublist oldScores 1 (failureThreshold + 1)   ;; take only the newest k scores
+       if (oldScores = n-values failureThreshold [score])  [                                    ;; we test if the strategy isn't giving us good results we will change the strategy after a number of failures
+         set failureCount failureCount + 1                        ;; increment number of failures
+         show "WOOOOOOOOOOOOOPPPPPPPPPSSSSSSSSSSSSSSSSIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+         let newStrategies remove peer-strategy strategies        ;; remove the strategy from the possible new strategies
+         choose-strategy one-of strategies                      ;; choose one of the new strategies
+      
+       ] 
+    ]
+  ]   
   [
     if verbose? [ show word "The score is: " score]
     if verbose? [ show "No more possible documents to like!"]
@@ -564,8 +578,7 @@ end
 
 to highlight-peers
   ;ask peers [ ifelse taste = "RED" [set color red + 1.5 ][set color yellow + 3] set size 1.2 ]
-  ask peers [ ifelse population = "attacker" [ set color attackerColor ]
-    [ ifelse population = "crowd follower" [ set color crowdColor    ] [ set color fFollowerColor] ] set size 1.2 ]      ;;reset the original sizes and colors
+  ask peers [ choose-color set size 1.2 ]      ;;reset the original sizes and colors
   set size 2.5
   set color color + 1.2
   let p out-follow-link-neighbors                    ;; highlight the friends of the active peer
@@ -652,6 +665,37 @@ to join-network    ;;peer procedure: join the network depending on join-probabil
   ]
 end
 
+to choose-strategy [strategy]
+  ifelse strategy = "document popularity" [
+  set population "crowd follower" set peer-strategy strategy set color crowdColor  
+  ]    ;; choose ranking metrics for the population to use
+  [ ifelse strategy = "peer similarity" [
+  set population "friend follower" set peer-strategy strategy set color fFollowerColor 
+  ][
+  set population "random behavior" set peer-strategy strategy  set color randomColor]
+  ]              
+                                                                                                            ;; this can be improved, e.g. creating a different ranking metrics for malicious peers (attackers)  
+end
+
+to choose-color
+   ifelse population = "attacker" [ set color attackerColor ]
+    [ ifelse population = "crowd follower" [ set color crowdColor ] 
+      [ ifelse population = "friend follower" [ set color fFollowerColor]
+        [ set color randomColor ]
+      ]      
+    ]
+  
+end
+
+to showpop
+  show count peers with [ population = "crowd follower" ]
+  show count peers with [ population = "friend follower"]
+  show count peers with [ population = "attacker"]
+  show count peers with [ population = "random behavior"]
+  
+  
+end  
+  
 
 
 ;;;;;;;;;;;
@@ -1140,6 +1184,17 @@ SWITCH
 default?
 default?
 1
+1
+-1000
+
+SWITCH
+1024
+113
+1114
+146
+adapt?
+adapt?
+0
 1
 -1000
 
