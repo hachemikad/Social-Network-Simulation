@@ -1,7 +1,7 @@
 # Social-Network-Simulation
-This is a simulation of a social sharing network using NetLogo.
+This is a simulation of a social sharing network using NetLogo. Netlogo is an agent-based programming tool designed for modeling networks,  real world scenarios, emerging phenomenoms, and much more.
 
-Note: this is an early version of the simulation, so for now it's not perfect, and there is yet lot of stuff to be added in future versions (e.g. more metrics, plotting, adding automatic generation of user input, etc).
+Note: we're still working on the simulation, so for now it's not perfect, and there is yet lot of stuff to be added in future versions (e.g. more metrics, plotting, adding automatic generation for predefined graphs for example a small world, etc).
 
 ## What's in the folder?
 
