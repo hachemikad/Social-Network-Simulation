@@ -55,7 +55,7 @@ When you run the simulation you can see that there are different colors for each
 
 You can trie adjusting the number of peers and documents, and change the distribution of documents accross the network, and see what happens. You can play with the populations, set different sizes and see how they fare by comparing their scores. There are many things to try, seing as there are various parameters you can change, now it's up to your imagination.
 
-# EXTENDING THE MODEL
+## EXTENDING THE MODEL
 
 This model is surely not complete, and there are different ways to extend it: adding new metrics for ranking, adding new behaviors, than means new population of peers (e.g. some ideas, anti-social peers: peers that don't follow anyone, advertiser peers: peers that want other peers to like their documents and have a different utility function for calculating their score).
 
