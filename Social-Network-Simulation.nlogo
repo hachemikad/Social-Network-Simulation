@@ -708,7 +708,6 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 351
@@ -1201,7 +1200,7 @@ adapt?
 @#$#@#$#@
 ## WHAT IS IT?
 
-This is a simulation of a social sharing network. In the network we have different peers and documents. The peers can follow each others, and they can like documents too following certain metrics. The trick here is that every peer is potentially different from another one, that means two peers can have a different taste in documents, so they will tend to like different types of documents (documents are not similar too because they can have different labels). In our simulation we have introduced labels. The labels are a generic way of saying that a peer like something, or a document is about this thing. The peer taste is constructed from these labels (he can have one or many labels), as it is the case for documents too, we decided to call the labels for documents tags, but that dosn't stand for the literary tags as in keywords, what we mean by labels here is something more truthful than a tag or a keyword, as in the real world, these can't always describe a document. So in order to decide if some document is relevant to a peer, we use these labels to mesure relevance and calculate the pay-off for the peers. 
+This is a simulation of a social sharing network. In the network we have different peers and documents. The peers can follow each others, and they can like documents to following certain metrics. The trick here is that every peer is potentially different from another one, that means two peers can have a different taste in documents, so they will tend to like different types of documents (documents are not similar too because they can have different labels). In our simulation we have introduced labels. The labels are a generic way of saying that a peer like something, or a document is about this thing. The peer taste is constructed from these labels (he can have one or many labels), as it is the case for documents too, we decided to call the labels for documents tags, but that dosn't stand for the literary tags as in keywords, what we mean by labels here is something more truthful than a tag or a keyword, as in the real world, these can't always describe a document. So in order to decide if some document is relevant to a peer, we use these labels to mesure relevance and calculate the pay-off for the peers. 
 
 ## HOW IT WORKS
 
